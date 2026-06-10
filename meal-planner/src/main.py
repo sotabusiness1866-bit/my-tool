@@ -4,6 +4,9 @@ import anthropic
 import requests
 from datetime import datetime
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def generate_meal_plan() -> str:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -16,15 +19,16 @@ def generate_meal_plan() -> str:
                 "role": "user",
                 "content": (
                     "今週（月曜〜日曜）の夕食の献立を7日分考えてください。\n"
+                    "予算は食材費合計で週6,500円以内に収めてください。\n"
                     "以下の形式で出力してください：\n\n"
-                    "【今週の献立】\n"
-                    "月：〇〇\n"
-                    "火：〇〇\n"
-                    "水：〇〇\n"
-                    "木：〇〇\n"
-                    "金：〇〇\n"
-                    "土：〇〇\n"
-                    "日：〇〇\n\n"
+                    "【今週の献立】（週予算：6,500円）\n"
+                    "月：〇〇（目安 約〇〇円）\n"
+                    "火：〇〇（目安 約〇〇円）\n"
+                    "水：〇〇（目安 約〇〇円）\n"
+                    "木：〇〇（目安 約〇〇円）\n"
+                    "金：〇〇（目安 約〇〇円）\n"
+                    "土：〇〇（目安 約〇〇円）\n"
+                    "日：〇〇（目安 約〇〇円）\n\n"
                     "バリエーション豊かで栄養バランスの良い献立にしてください。"
                 ),
             }
