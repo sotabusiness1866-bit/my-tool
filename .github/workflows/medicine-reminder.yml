@@ -1,0 +1,34 @@
+name: Medicine Reminder
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # 毎日朝 8:00 JST (= 前日 23:00 UTC)
+    - cron: '0 12 * * *'  # 毎日夜 21:00 JST (= 12:00 UTC)
+  workflow_dispatch:
+    inputs:
+      time_of_day:
+        description: '時間帯を指定 (morning / evening)。空欄の場合は実行時刻から自動判定'
+        required: false
+        default: ''
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r medicine-reminder/requirements.txt
+
+      - name: Send medicine reminder to LINE
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          TIME_OF_DAY: ${{ github.event.inputs.time_of_day }}
+        run: python medicine-reminder/src/main.py

@@ -1,0 +1,20 @@
+# お薬リマインダー設定ファイル
+# timing に morning（朝）と evening（夜）を指定してください
+
+medicines:
+  - name: "薬A（例: 血圧の薬）"
+    timing:
+      - morning
+      - evening
+    note: "食後に服用"
+
+  - name: "薬B（例: 胃薬）"
+    timing:
+      - morning
+    note: "食前に服用"
+
+# 通知先のLINEユーザー情報
+# id は GitHub Secrets の LINE_USER_IDS にカンマ区切りで設定してください
+users:
+  - name: "太郎"
+  - name: "花子"

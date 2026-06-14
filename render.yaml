@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: medicine-reminder
+    env: python
+    rootDir: medicine-reminder
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_FAMILY_IDS
+        sync: false
