@@ -45,6 +45,8 @@ async def webhook(request: Request):
 
     events = json.loads(body).get("events", [])
     for event in events:
+        user_id = event.get("source", {}).get("userId", "unknown")
+        print(f"[EVENT] type={event.get('type')} userId={user_id}")
         if (
             event.get("type") == "postback"
             and event.get("postback", {}).get("data") == "medicine_taken"
