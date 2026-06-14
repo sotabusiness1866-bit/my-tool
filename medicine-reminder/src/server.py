@@ -47,6 +47,10 @@ async def webhook(request: Request):
     for event in events:
         user_id = event.get("source", {}).get("userId", "unknown")
         print(f"[EVENT] type={event.get('type')} userId={user_id}")
+
+        if event.get("type") == "message":
+            push_text(user_id, f"あなたのLINE IDは以下です：\n{user_id}")
+
         if (
             event.get("type") == "postback"
             and event.get("postback", {}).get("data") == "medicine_taken"
