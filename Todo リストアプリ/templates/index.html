@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}やること一覧{% endblock %}
+{% block content %}
+  <h1>やること一覧</h1>
+  <p><a class="btn" href="{{ url_for('new') }}">＋ 新しく登録する</a></p>
+
+  {% if todos %}
+    <table>
+      <thead>
+        <tr>
+          <th>タイトル</th>
+          <th>内容</th>
+          <th>期日</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for todo in todos %}
+          <tr>
+            <td>{{ todo.title }}</td>
+            <td>{{ todo.content }}</td>
+            <td>{{ todo.due_date }}</td>
+            <td><a href="{{ url_for('edit', todo_id=todo.id) }}">編集</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">まだやることが登録されていません。</p>
+  {% endif %}
+{% endblock %}

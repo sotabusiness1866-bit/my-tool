@@ -1,0 +1,9 @@
+# Google サービスアカウントの認証情報（絶対にコミットしない）
+credentials.json
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/

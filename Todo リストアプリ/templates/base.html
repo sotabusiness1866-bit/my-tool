@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Todo リスト{% endblock %}</title>
+  <style>
+    body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+           max-width: 760px; margin: 0 auto; padding: 24px; color: #222; }
+    h1 { font-size: 1.5rem; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .btn { display: inline-block; padding: 8px 16px; background: #2563eb;
+           color: #fff; border-radius: 6px; border: none; cursor: pointer;
+           font-size: 0.95rem; }
+    .btn:hover { background: #1d4ed8; text-decoration: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb;
+             vertical-align: top; }
+    th { background: #f9fafb; font-size: 0.85rem; color: #6b7280; }
+    .flash { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;
+             padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+    .field { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
+    input[type=text], input[type=date], textarea {
+      width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;
+      font-size: 1rem; box-sizing: border-box; }
+    textarea { min-height: 90px; resize: vertical; }
+    .empty { color: #6b7280; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</body>
+</html>
