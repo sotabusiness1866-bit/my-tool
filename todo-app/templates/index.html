@@ -20,7 +20,12 @@
             <td>{{ todo.title }}</td>
             <td>{{ todo.content }}</td>
             <td>{{ todo.due_date }}</td>
-            <td><a href="{{ url_for('edit', todo_id=todo.id) }}">編集</a></td>
+            <td>
+              <a href="{{ url_for('edit', todo_id=todo.id) }}">編集</a>
+              <form method="post" action="{{ url_for('delete', todo_id=todo.id) }}" style="display:inline" onsubmit="return confirm('削除しますか？')">
+                <button type="submit" class="btn-delete">削除</button>
+              </form>
+            </td>
           </tr>
         {% endfor %}
       </tbody>

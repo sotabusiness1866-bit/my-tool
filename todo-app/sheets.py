@@ -99,6 +99,12 @@ def update_todo(todo_id, title, content, due_date):
     return True
 
 
+def delete_todo(todo_id):
+    """行番号で指定したやることを削除する。"""
+    worksheet = _get_worksheet()
+    worksheet.delete_rows(int(todo_id))
+
+
 def validate_due_date(due_date):
     """期日が YYYY-MM-DD 形式か、または空かを確認する。"""
     if not due_date:

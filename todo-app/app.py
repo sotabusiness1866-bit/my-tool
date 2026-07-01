@@ -71,5 +71,13 @@ def edit(todo_id):
     return render_template("form.html", todo=todo, action="edit")
 
 
+@app.route("/delete/<todo_id>", methods=["POST"])
+def delete(todo_id):
+    """やることの削除。"""
+    sheets.delete_todo(todo_id)
+    flash("やることを削除しました。")
+    return redirect(url_for("index"))
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
