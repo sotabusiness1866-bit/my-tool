@@ -1,7 +1,7 @@
 """Googleスプレッドシートをデータ保存先として使うためのデータ層。
 
 各やること（Todo）は1行で、列は次の通り:
-    id | title | content | due_date
+    タイトル | 内容 | 期日
 
 環境変数:
     GOOGLE_CREDENTIALS_FILE  サービスアカウントの認証JSONへのパス
@@ -11,7 +11,6 @@
 
 import json
 import os
-import uuid
 from datetime import datetime
 
 import gspread
@@ -25,7 +24,7 @@ SCOPES = [
 CREDENTIALS_FILE = os.environ.get("GOOGLE_CREDENTIALS_FILE", "credentials.json")
 SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "TodoApp")
 
-HEADER = ["id", "title", "content", "due_date"]
+HEADER = ["タイトル", "内容", "期日"]
 
 
 def _get_worksheet():
@@ -49,46 +48,54 @@ def _get_worksheet():
 
     worksheet = spreadsheet.sheet1
 
-    # ヘッダー行が無ければ作る
     if worksheet.row_values(1) != HEADER:
-        worksheet.update([HEADER], "A1:D1")
+        worksheet.update([HEADER], "A1:C1")
 
     return worksheet
 
 
 def list_todos():
-    """全てのやることを辞書のリストで返す。"""
+    """全てのやることを辞書のリストで返す。行番号をidとして付与する。"""
     worksheet = _get_worksheet()
-    return worksheet.get_all_records()
+    rows = worksheet.get_all_values()
+    if len(rows) <= 1:
+        return []
+    todos = []
+    for i, row in enumerate(rows[1:], start=2):
+        todos.append({
+            "id": i,
+            "title": row[0] if len(row) > 0 else "",
+            "content": row[1] if len(row) > 1 else "",
+            "due_date": row[2] if len(row) > 2 else "",
+        })
+    return todos
 
 
 def get_todo(todo_id):
-    """IDで1件のやることを取得する。無ければ None。"""
-    for todo in list_todos():
-        if str(todo["id"]) == str(todo_id):
-            return todo
-    return None
+    """行番号で1件のやることを取得する。無ければ None。"""
+    worksheet = _get_worksheet()
+    row = worksheet.row_values(int(todo_id))
+    if not row:
+        return None
+    return {
+        "id": int(todo_id),
+        "title": row[0] if len(row) > 0 else "",
+        "content": row[1] if len(row) > 1 else "",
+        "due_date": row[2] if len(row) > 2 else "",
+    }
 
 
 def add_todo(title, content, due_date):
-    """新しいやることを追加する。生成したIDを返す。"""
+    """新しいやることを追加する。"""
     worksheet = _get_worksheet()
-    todo_id = uuid.uuid4().hex[:8]
-    worksheet.append_row([todo_id, title, content, due_date])
-    return todo_id
+    worksheet.append_row([title, content, due_date])
 
 
 def update_todo(todo_id, title, content, due_date):
-    """既存のやることを更新する。見つかれば True。"""
+    """行番号で既存のやることを更新する。"""
     worksheet = _get_worksheet()
-    cell = worksheet.find(str(todo_id), in_column=1)
-    if cell is None:
-        return False
-    row = cell.row
-    worksheet.update(
-        [[str(todo_id), title, content, due_date]],
-        f"A{row}:D{row}",
-    )
+    row = int(todo_id)
+    worksheet.update([[title, content, due_date]], f"A{row}:C{row}")
     return True
 
 
