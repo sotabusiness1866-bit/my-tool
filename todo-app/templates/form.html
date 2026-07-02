@@ -16,6 +16,15 @@
       <label for="due_date">期日</label>
       <input type="date" id="due_date" name="due_date" value="{{ todo.due_date or '' }}">
     </div>
+    <div class="field">
+      <label for="priority">優先度</label>
+      <select id="priority" name="priority">
+        {% set current_priority = todo.priority or '中' %}
+        <option value="高" {% if current_priority == '高' %}selected{% endif %}>高</option>
+        <option value="中" {% if current_priority == '中' %}selected{% endif %}>中</option>
+        <option value="低" {% if current_priority == '低' %}selected{% endif %}>低</option>
+      </select>
+    </div>
     <button class="btn" type="submit">
       {% if action == 'edit' %}更新する{% else %}登録する{% endif %}
     </button>

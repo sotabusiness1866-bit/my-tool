@@ -8,18 +8,26 @@
     <table>
       <thead>
         <tr>
+          <th></th>
           <th>タイトル</th>
           <th>内容</th>
           <th>期日</th>
+          <th>優先度</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for todo in todos %}
-          <tr>
+          <tr class="{% if todo.completed %}completed{% endif %}">
+            <td>
+              <form method="post" action="{{ url_for('toggle', todo_id=todo.id) }}">
+                <input type="checkbox" onchange="this.form.submit()" {% if todo.completed %}checked{% endif %}>
+              </form>
+            </td>
             <td>{{ todo.title }}</td>
             <td>{{ todo.content }}</td>
             <td>{{ todo.due_date }}</td>
+            <td><span class="priority priority-{{ {'高': 'high', '中': 'mid', '低': 'low'}[todo.priority] }}">{{ todo.priority }}</span></td>
             <td>
               <a href="{{ url_for('edit', todo_id=todo.id) }}">編集</a>
               <form method="post" action="{{ url_for('delete', todo_id=todo.id) }}" style="display:inline" onsubmit="return confirm('削除しますか？')">

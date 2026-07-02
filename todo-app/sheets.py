@@ -1,7 +1,7 @@
 """Googleスプレッドシートをデータ保存先として使うためのデータ層。
 
 各やること（Todo）は1行で、列は次の通り:
-    タイトル | 内容 | 期日
+    タイトル | 内容 | 期日 | 優先度 | 完了
 
 環境変数:
     GOOGLE_CREDENTIALS_FILE  サービスアカウントの認証JSONへのパス
@@ -24,7 +24,11 @@ SCOPES = [
 CREDENTIALS_FILE = os.environ.get("GOOGLE_CREDENTIALS_FILE", "credentials.json")
 SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "TodoApp")
 
-HEADER = ["タイトル", "内容", "期日"]
+HEADER = ["タイトル", "内容", "期日", "優先度", "完了"]
+
+PRIORITIES = ["高", "中", "低"]
+DEFAULT_PRIORITY = "中"
+_PRIORITY_ORDER = {value: index for index, value in enumerate(PRIORITIES)}
 
 
 def _get_worksheet():
@@ -54,20 +58,29 @@ def _get_worksheet():
     return worksheet
 
 
+def _row_to_todo(row_index, row):
+    priority = row[3] if len(row) > 3 and row[3] in PRIORITIES else DEFAULT_PRIORITY
+    return {
+        "id": row_index,
+        "title": row[0] if len(row) > 0 else "",
+        "content": row[1] if len(row) > 1 else "",
+        "due_date": row[2] if len(row) > 2 else "",
+        "priority": priority,
+        "completed": len(row) > 4 and row[4] == "TRUE",
+    }
+
+
 def list_todos():
-    """全てのやることを辞書のリストで返す。行番号をidとして付与する。"""
+    """全てのやることを辞書のリストで返す。
+
+    行番号をidとして付与し、未完了かつ優先度の高いものが上に来るよう並び替える。
+    """
     worksheet = _get_worksheet()
     rows = worksheet.get_all_values()
     if len(rows) <= 1:
         return []
-    todos = []
-    for i, row in enumerate(rows[1:], start=2):
-        todos.append({
-            "id": i,
-            "title": row[0] if len(row) > 0 else "",
-            "content": row[1] if len(row) > 1 else "",
-            "due_date": row[2] if len(row) > 2 else "",
-        })
+    todos = [_row_to_todo(i, row) for i, row in enumerate(rows[1:], start=2)]
+    todos.sort(key=lambda todo: (todo["completed"], _PRIORITY_ORDER[todo["priority"]]))
     return todos
 
 
@@ -77,25 +90,32 @@ def get_todo(todo_id):
     row = worksheet.row_values(int(todo_id))
     if not row:
         return None
-    return {
-        "id": int(todo_id),
-        "title": row[0] if len(row) > 0 else "",
-        "content": row[1] if len(row) > 1 else "",
-        "due_date": row[2] if len(row) > 2 else "",
-    }
+    return _row_to_todo(int(todo_id), row)
 
 
-def add_todo(title, content, due_date):
+def add_todo(title, content, due_date, priority=DEFAULT_PRIORITY):
     """新しいやることを追加する。"""
     worksheet = _get_worksheet()
-    worksheet.append_row([title, content, due_date])
+    worksheet.append_row([title, content, due_date, priority, "FALSE"])
 
 
-def update_todo(todo_id, title, content, due_date):
-    """行番号で既存のやることを更新する。"""
+def update_todo(todo_id, title, content, due_date, priority=DEFAULT_PRIORITY):
+    """行番号で既存のやることを更新する（完了状態は変更しない）。"""
     worksheet = _get_worksheet()
     row = int(todo_id)
-    worksheet.update([[title, content, due_date]], f"A{row}:C{row}")
+    if not worksheet.row_values(row):
+        return False
+    worksheet.update([[title, content, due_date, priority]], f"A{row}:D{row}")
+    return True
+
+
+def toggle_todo(todo_id):
+    """行番号で指定したやることの完了状態を反転させる。"""
+    worksheet = _get_worksheet()
+    row = int(todo_id)
+    current = worksheet.acell(f"E{row}").value
+    new_value = "FALSE" if current == "TRUE" else "TRUE"
+    worksheet.update([[new_value]], f"E{row}")
     return True
 
 
@@ -114,3 +134,8 @@ def validate_due_date(due_date):
         return True
     except ValueError:
         return False
+
+
+def validate_priority(priority):
+    """優先度が既定の値のいずれかかを確認する。"""
+    return priority in PRIORITIES
