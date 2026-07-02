@@ -53,7 +53,8 @@ def _get_worksheet():
     worksheet = spreadsheet.sheet1
 
     if worksheet.row_values(1) != HEADER:
-        worksheet.update([HEADER], "A1:C1")
+        end_column = gspread.utils.rowcol_to_a1(1, len(HEADER))
+        worksheet.update([HEADER], f"A1:{end_column}")
 
     return worksheet
 
