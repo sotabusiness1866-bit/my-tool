@@ -80,6 +80,12 @@ def edit(todo_id):
     return render_template("form.html", todo=todo, action="edit")
 
 
+@app.route("/stats")
+def stats():
+    """統計・分析ページ。"""
+    return render_template("stats.html", stats=sheets.get_stats())
+
+
 @app.route("/toggle/<todo_id>", methods=["POST"])
 def toggle(todo_id):
     """やることの完了・未完了を切り替える。"""

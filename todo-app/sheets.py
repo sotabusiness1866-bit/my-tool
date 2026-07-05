@@ -11,7 +11,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -124,6 +124,62 @@ def delete_todo(todo_id):
     """行番号で指定したやることを削除する。"""
     worksheet = _get_worksheet()
     worksheet.delete_rows(int(todo_id))
+
+
+def _parse_due_date(due_date):
+    """期日文字列を date に変換する。空・不正な場合は None。"""
+    try:
+        return datetime.strptime(due_date, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _summarize(todos):
+    """やることのリストから件数・完了数・達成率をまとめる。"""
+    total = len(todos)
+    completed = sum(1 for todo in todos if todo["completed"])
+    rate = round(completed / total * 100, 1) if total else 0.0
+    return {"total": total, "completed": completed, "rate": rate}
+
+
+def get_stats():
+    """完了数や今週・今月の達成率などの統計情報を返す。
+
+    週・月の達成率は完了日を記録していないため、各やることの「期日」が
+    今週・今月に入っているものを対象に、その中での完了割合として算出する。
+    """
+    todos = list_todos()
+    today = datetime.now().date()
+
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    month_start = today.replace(day=1)
+    next_month = (
+        month_start.replace(year=month_start.year + 1, month=1)
+        if month_start.month == 12
+        else month_start.replace(month=month_start.month + 1)
+    )
+    month_end = next_month - timedelta(days=1)
+
+    dated_todos = [(todo, _parse_due_date(todo["due_date"])) for todo in todos]
+    week_todos = [todo for todo, due in dated_todos if due and week_start <= due <= week_end]
+    month_todos = [todo for todo, due in dated_todos if due and month_start <= due <= month_end]
+
+    priority_stats = {
+        priority: _summarize([todo for todo in todos if todo["priority"] == priority])
+        for priority in PRIORITIES
+    }
+
+    overall = _summarize(todos)
+    return {
+        "total": overall["total"],
+        "completed": overall["completed"],
+        "incomplete": overall["total"] - overall["completed"],
+        "rate": overall["rate"],
+        "week": _summarize(week_todos),
+        "month": _summarize(month_todos),
+        "priority": priority_stats,
+    }
 
 
 def validate_due_date(due_date):

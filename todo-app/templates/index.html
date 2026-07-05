@@ -2,7 +2,10 @@
 {% block title %}やること一覧{% endblock %}
 {% block content %}
   <h1>やること一覧</h1>
-  <p><a class="btn" href="{{ url_for('new') }}">＋ 新しく登録する</a></p>
+  <p>
+    <a class="btn" href="{{ url_for('new') }}">＋ 新しく登録する</a>
+    <a href="{{ url_for('stats') }}" style="margin-left: 12px;">📊 統計・分析を見る</a>
+  </p>
 
   {% if todos %}
     <table>

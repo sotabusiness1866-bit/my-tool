@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}統計・分析{% endblock %}
+{% block content %}
+  <h1>統計・分析</h1>
+  <p><a href="{{ url_for('index') }}">← 一覧に戻る</a></p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">登録件数</div>
+      <div class="value">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">完了</div>
+      <div class="value">{{ stats.completed }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">未完了</div>
+      <div class="value">{{ stats.incomplete }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">全体の達成率</div>
+      <div class="value">{{ stats.rate }}%</div>
+    </div>
+  </div>
+
+  <div class="stat-section">
+    <h2>期間別の達成率</h2>
+    <p style="color:#6b7280; font-size:0.85rem; margin-top:-4px;">期日がその期間内にあるやることのうち、完了しているものの割合です。</p>
+    <div class="progress-row">
+      <div class="progress-label">今週</div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ stats.week.rate }}%;"></div></div>
+      <div class="progress-count">{{ stats.week.completed }} / {{ stats.week.total }} ({{ stats.week.rate }}%)</div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label">今月</div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ stats.month.rate }}%;"></div></div>
+      <div class="progress-count">{{ stats.month.completed }} / {{ stats.month.total }} ({{ stats.month.rate }}%)</div>
+    </div>
+  </div>
+
+  <div class="stat-section">
+    <h2>優先度別の達成率</h2>
+    {% for priority, data in stats.priority.items() %}
+      <div class="progress-row">
+        <div class="progress-label">{{ priority }}</div>
+        <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ data.rate }}%;"></div></div>
+        <div class="progress-count">{{ data.completed }} / {{ data.total }} ({{ data.rate }}%)</div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
