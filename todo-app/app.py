@@ -15,7 +15,7 @@ import calendar_service
 import sheets
 
 app = Flask(__name__)
-app.secret_key = "change-this-secret-key"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-this-secret-key-for-local-dev-only")
 
 
 @app.route("/")
