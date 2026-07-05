@@ -9,3 +9,7 @@ services:
         sync: false
       - key: SPREADSHEET_NAME
         value: TodoApp
+      - key: GOOGLE_OAUTH_CLIENT_SECRET_JSON
+        sync: false
+      - key: GOOGLE_OAUTH_TOKEN_JSON
+        sync: false

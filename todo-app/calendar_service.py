@@ -4,12 +4,17 @@
 予定を作成・更新・削除するために OAuth 2.0 クライアントを使う。
 
 環境変数:
+    GOOGLE_OAUTH_CLIENT_SECRET_JSON   OAuthクライアントのシークレットJSONの中身そのもの
+                                      (本番向け。設定されていればファイルより優先)
     GOOGLE_OAUTH_CLIENT_SECRET_FILE  OAuthクライアントのシークレットJSONへのパス
                                       (デフォルト: oauth_client_secret.json)
+    GOOGLE_OAUTH_TOKEN_JSON          認証済みトークンJSONの中身そのもの
+                                      (本番向け。設定されていればファイルより優先)
     GOOGLE_OAUTH_TOKEN_FILE          認証後に発行されるトークンの保存先
                                       (デフォルト: token.json)
 """
 
+import json
 import os
 from datetime import datetime, timedelta
 
@@ -26,6 +31,10 @@ CALENDAR_ID = "primary"
 
 
 def _build_flow(redirect_uri):
+    client_secret_json = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET_JSON")
+    if client_secret_json:
+        config = json.loads(client_secret_json)
+        return Flow.from_client_config(config, scopes=SCOPES, redirect_uri=redirect_uri)
     return Flow.from_client_secrets_file(
         CLIENT_SECRET_FILE, scopes=SCOPES, redirect_uri=redirect_uri
     )
@@ -49,7 +58,11 @@ def exchange_code(redirect_uri, state, authorization_response):
 
 
 def disconnect():
-    """保存済みトークンを削除し、連携を解除する。"""
+    """保存済みトークンを削除し、連携を解除する。
+
+    GOOGLE_OAUTH_TOKEN_JSON で運用している場合は、この環境変数自体を
+    ホスティング先の管理画面から削除しないと連携は解除されない。
+    """
     if os.path.exists(TOKEN_FILE):
         os.remove(TOKEN_FILE)
 
@@ -65,9 +78,14 @@ def _save_credentials(creds):
 
 
 def _load_credentials():
-    if not os.path.exists(TOKEN_FILE):
+    token_json = os.environ.get("GOOGLE_OAUTH_TOKEN_JSON")
+    if token_json:
+        creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
+    elif os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    else:
         return None
-    creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
         _save_credentials(creds)
