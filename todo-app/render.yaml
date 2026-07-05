@@ -13,3 +13,5 @@ services:
         sync: false
       - key: GOOGLE_OAUTH_TOKEN_JSON
         sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -113,7 +113,7 @@ def calendar_callback():
         calendar_service.exchange_code(redirect_uri, session.get("oauth_state"), request.url)
         flash("Googleカレンダーと連携しました。")
     except Exception as e:
-        print(f"[calendar] 認可コードの交換に失敗しました: {e}")
+        print(f"[calendar] 認可コードの交換に失敗しました: {e}", flush=True)
         flash("Googleカレンダーとの連携に失敗しました。")
     return redirect(url_for("index"))
 

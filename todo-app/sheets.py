@@ -104,7 +104,7 @@ def add_todo(title, content, due_date, priority=DEFAULT_PRIORITY):
     try:
         event_id = calendar_service.create_event(title, content, due_date) or ""
     except Exception as e:
-        print(f"[calendar] イベント作成に失敗しました: {e}")
+        print(f"[calendar] イベント作成に失敗しました: {e}", flush=True)
     worksheet.append_row([title, content, due_date, priority, "FALSE", event_id])
 
 
@@ -123,7 +123,7 @@ def update_todo(todo_id, title, content, due_date, priority=DEFAULT_PRIORITY):
     try:
         event_id = calendar_service.update_event(event_id, title, content, due_date) or ""
     except Exception as e:
-        print(f"[calendar] イベント更新に失敗しました: {e}")
+        print(f"[calendar] イベント更新に失敗しました: {e}", flush=True)
 
     worksheet.update([[title, content, due_date, priority]], f"A{row}:D{row}")
     worksheet.update([[event_id]], f"F{row}")
@@ -148,7 +148,7 @@ def toggle_todo(todo_id):
         try:
             calendar_service.mark_event_status(event_id, title, completed=(new_value == "TRUE"))
         except Exception as e:
-            print(f"[calendar] イベント状態更新に失敗しました: {e}")
+            print(f"[calendar] イベント状態更新に失敗しました: {e}", flush=True)
     return True
 
 
@@ -162,7 +162,7 @@ def delete_todo(todo_id):
         try:
             calendar_service.delete_event(event_id)
         except Exception as e:
-            print(f"[calendar] イベント削除に失敗しました: {e}")
+            print(f"[calendar] イベント削除に失敗しました: {e}", flush=True)
     worksheet.delete_rows(row)
 
 
