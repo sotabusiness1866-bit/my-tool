@@ -7,6 +7,17 @@
     <a href="{{ url_for('stats') }}" style="margin-left: 12px;">📊 統計・分析を見る</a>
   </p>
 
+  <p class="calendar-status">
+    {% if calendar_connected %}
+      📅 Googleカレンダーと連携中です。
+      <form method="post" action="{{ url_for('calendar_disconnect') }}" style="display:inline" onsubmit="return confirm('連携を解除しますか？')">
+        <button type="submit" class="btn-delete">連携を解除</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('calendar_connect') }}">📅 Googleカレンダーと連携する</a>
+    {% endif %}
+  </p>
+
   {% if todos %}
     <table>
       <thead>

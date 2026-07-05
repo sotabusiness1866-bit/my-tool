@@ -2,6 +2,10 @@
 credentials.json
 .env
 
+# Google Calendar連携用のOAuthクライアント情報・トークン（絶対にコミットしない）
+oauth_client_secret.json
+token.json
+
 # Python
 __pycache__/
 *.pyc

@@ -1,7 +1,7 @@
 """Googleスプレッドシートをデータ保存先として使うためのデータ層。
 
 各やること（Todo）は1行で、列は次の通り:
-    タイトル | 内容 | 期日 | 優先度 | 完了
+    タイトル | 内容 | 期日 | 優先度 | 完了 | カレンダーイベントID
 
 環境変数:
     GOOGLE_CREDENTIALS_FILE  サービスアカウントの認証JSONへのパス
@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
 
+import calendar_service
+
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
@@ -24,7 +26,7 @@ SCOPES = [
 CREDENTIALS_FILE = os.environ.get("GOOGLE_CREDENTIALS_FILE", "credentials.json")
 SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "TodoApp")
 
-HEADER = ["タイトル", "内容", "期日", "優先度", "完了"]
+HEADER = ["タイトル", "内容", "期日", "優先度", "完了", "カレンダーイベントID"]
 
 PRIORITIES = ["高", "中", "低"]
 DEFAULT_PRIORITY = "中"
@@ -68,6 +70,7 @@ def _row_to_todo(row_index, row):
         "due_date": row[2] if len(row) > 2 else "",
         "priority": priority,
         "completed": len(row) > 4 and row[4] == "TRUE",
+        "event_id": row[5] if len(row) > 5 else "",
     }
 
 
@@ -95,35 +98,72 @@ def get_todo(todo_id):
 
 
 def add_todo(title, content, due_date, priority=DEFAULT_PRIORITY):
-    """新しいやることを追加する。"""
+    """新しいやることを追加する。期日があればGoogleカレンダーにも予定を作成する。"""
     worksheet = _get_worksheet()
-    worksheet.append_row([title, content, due_date, priority, "FALSE"])
+    event_id = ""
+    try:
+        event_id = calendar_service.create_event(title, content, due_date) or ""
+    except Exception as e:
+        print(f"[calendar] イベント作成に失敗しました: {e}")
+    worksheet.append_row([title, content, due_date, priority, "FALSE", event_id])
 
 
 def update_todo(todo_id, title, content, due_date, priority=DEFAULT_PRIORITY):
-    """行番号で既存のやることを更新する（完了状態は変更しない）。"""
+    """行番号で既存のやることを更新する（完了状態は変更しない）。
+
+    対応するGoogleカレンダーの予定があれば内容を更新し、期日が無くなった場合は削除する。
+    """
     worksheet = _get_worksheet()
     row = int(todo_id)
-    if not worksheet.row_values(row):
+    existing = worksheet.row_values(row)
+    if not existing:
         return False
+
+    event_id = existing[5] if len(existing) > 5 else ""
+    try:
+        event_id = calendar_service.update_event(event_id, title, content, due_date) or ""
+    except Exception as e:
+        print(f"[calendar] イベント更新に失敗しました: {e}")
+
     worksheet.update([[title, content, due_date, priority]], f"A{row}:D{row}")
+    worksheet.update([[event_id]], f"F{row}")
     return True
 
 
 def toggle_todo(todo_id):
-    """行番号で指定したやることの完了状態を反転させる。"""
+    """行番号で指定したやることの完了状態を反転させる。
+
+    対応するGoogleカレンダーの予定があればタイトルに完了マークを反映する。
+    """
     worksheet = _get_worksheet()
     row = int(todo_id)
-    current = worksheet.acell(f"E{row}").value
+    values = worksheet.row_values(row)
+    current = values[4] if len(values) > 4 else ""
     new_value = "FALSE" if current == "TRUE" else "TRUE"
     worksheet.update([[new_value]], f"E{row}")
+
+    event_id = values[5] if len(values) > 5 else ""
+    title = values[0] if len(values) > 0 else ""
+    if event_id:
+        try:
+            calendar_service.mark_event_status(event_id, title, completed=(new_value == "TRUE"))
+        except Exception as e:
+            print(f"[calendar] イベント状態更新に失敗しました: {e}")
     return True
 
 
 def delete_todo(todo_id):
-    """行番号で指定したやることを削除する。"""
+    """行番号で指定したやることを削除する。対応するGoogleカレンダーの予定も削除する。"""
     worksheet = _get_worksheet()
-    worksheet.delete_rows(int(todo_id))
+    row = int(todo_id)
+    values = worksheet.row_values(row)
+    event_id = values[5] if len(values) > 5 else ""
+    if event_id:
+        try:
+            calendar_service.delete_event(event_id)
+        except Exception as e:
+            print(f"[calendar] イベント削除に失敗しました: {e}")
+    worksheet.delete_rows(row)
 
 
 def _parse_due_date(due_date):
