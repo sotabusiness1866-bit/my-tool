@@ -44,6 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const data = await difyResponse.json();
+
+    if (!difyResponse.ok) {
+      console.error('Dify API returned an error:', difyResponse.status, JSON.stringify(data));
+    }
+
     res.status(difyResponse.status).json(data);
   } catch (error) {
     console.error('Dify proxy request failed:', error);
