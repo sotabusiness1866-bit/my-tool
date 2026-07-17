@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Moon, Sun, Copy, Check } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -21,6 +21,12 @@ function App() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored) return stored === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userIdRef = useRef(crypto.randomUUID());
 
@@ -31,6 +37,21 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  const handleCopy = async (id: number, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 1500);
+    } catch (error) {
+      console.error('Failed to copy message to clipboard:', error);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
@@ -98,17 +119,24 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 flex flex-col transition-colors duration-200">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 py-4 shadow-sm">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/60 px-4 py-4 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">AI Chat</h1>
-            <p className="text-xs text-slate-500">Always here to help</p>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">AI Chat</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Always here to help</p>
           </div>
+          <button
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            aria-label={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+            className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200"
+          >
+            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
         </div>
       </header>
 
@@ -146,20 +174,35 @@ function App() {
                     message.isUser
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-tr-md'
                       : message.isError
-                      ? 'bg-red-50 text-red-600 rounded-tl-md border border-red-200'
-                      : 'bg-white text-slate-700 rounded-tl-md border border-slate-100'
+                      ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-tl-md border border-red-200 dark:border-red-900'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-md border border-slate-100 dark:border-slate-700'
                   }`}
                 >
                   <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
                     {message.text}
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 px-1">
-                  {message.timestamp.toLocaleTimeString('ja-JP', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
+                <div className="flex items-center gap-2 mt-1 px-1">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    {message.timestamp.toLocaleTimeString('ja-JP', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  {!message.isUser && !message.isError && (
+                    <button
+                      onClick={() => handleCopy(message.id, message.text)}
+                      aria-label="回答をコピー"
+                      className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors duration-150"
+                    >
+                      {copiedId === message.id ? (
+                        <Check className="w-3 h-3" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -170,11 +213,11 @@ function App() {
               <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-md bg-gradient-to-br from-emerald-400 to-teal-500">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-slate-100">
+              <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-md shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -185,7 +228,7 @@ function App() {
       </main>
 
       {/* Input Area */}
-      <footer className="bg-white/80 backdrop-blur-md border-t border-slate-200/60 px-4 py-4 shadow-lg shadow-slate-200/50">
+      <footer className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/60 px-4 py-4 shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50">
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-3 items-end">
             <div className="flex-1 relative">
@@ -195,7 +238,7 @@ function App() {
                 onKeyDown={handleKeyDown}
                 placeholder="メッセージを入力..."
                 rows={1}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-100 border-2 border-transparent focus:border-emerald-400 focus:bg-white focus:outline-none resize-none text-slate-700 placeholder-slate-400 transition-all duration-200 text-sm sm:text-base"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none resize-none text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-all duration-200 text-sm sm:text-base"
                 style={{ minHeight: '48px', maxHeight: '120px' }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -212,7 +255,7 @@ function App() {
               <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-[10px] text-slate-400 text-center mt-2">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">
             送信ボタンをクリックしてメッセージを送信
           </p>
         </div>
