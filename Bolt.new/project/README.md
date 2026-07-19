@@ -8,6 +8,7 @@ Bolt.new で生成した React + Vite 製のチャット画面に、[Dify](https
 - **Dify API連携** — 送信したメッセージをDifyのアプリに渡し、AIの回答を表示
 - **会話履歴の保持** — Difyの `conversation_id` を引き継ぎ、文脈を保った会話ができる
 - **エラーハンドリング** — 通信に失敗した場合はチャット画面にエラーメッセージを表示
+- **回答へのフィードバック** — AIの回答に👍/👎を付けてDifyへ送信し、Dify側の「ログ」でも確認できる
 - **APIキーの保護** — Difyの認証情報はサーバーレス関数（`api/chat.ts`）でのみ使用し、ブラウザには一切渡らない構成
 
 ## 構成
@@ -16,6 +17,7 @@ Bolt.new で生成した React + Vite 製のチャット画面に、[Dify](https
 |---|---|
 | `src/App.tsx` | チャット画面のUIと送信処理 |
 | `api/chat.ts` | Difyへのリクエストを中継するサーバーレス関数（Vercel） |
+| `api/feedback.ts` | 回答へのフィードバック（👍/👎）をDifyへ中継するサーバーレス関数（Vercel） |
 
 フロントエンドは `/api/chat` を叩き、`api/chat.ts` がサーバー側で `DIFY_API_KEY` を使ってDify本体（`chat-messages` エンドポイント）を呼び出します。APIキーはこの中継役より外（ブラウザ）には出ません。
 

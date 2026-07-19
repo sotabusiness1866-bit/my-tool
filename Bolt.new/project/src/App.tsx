@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Moon, Sun, Copy, Check } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Moon, Sun, Copy, Check, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -7,6 +7,8 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   isError?: boolean;
+  messageId?: string;
+  rating?: 'like' | 'dislike' | null;
 }
 
 function App() {
@@ -53,6 +55,36 @@ function App() {
     }
   };
 
+  const handleFeedback = async (id: number, messageId: string | undefined, rating: 'like' | 'dislike') => {
+    if (!messageId) return;
+
+    const previousRating = messages.find((m) => m.id === id)?.rating ?? null;
+    const nextRating = previousRating === rating ? null : rating;
+
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, rating: nextRating } : m)));
+
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message_id: messageId,
+          rating: nextRating,
+          user: userIdRef.current,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Feedback API responded with status ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Failed to send feedback to Dify API:', error);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, rating: previousRating } : m)));
+    }
+  };
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
 
@@ -95,6 +127,8 @@ function App() {
         text: data.answer ?? '応答を取得できませんでした。',
         isUser: false,
         timestamp: new Date(),
+        messageId: typeof data.message_id === 'string' ? data.message_id : undefined,
+        rating: null,
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -190,17 +224,45 @@ function App() {
                     })}
                   </span>
                   {!message.isUser && !message.isError && (
-                    <button
-                      onClick={() => handleCopy(message.id, message.text)}
-                      aria-label="回答をコピー"
-                      className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors duration-150"
-                    >
-                      {copiedId === message.id ? (
-                        <Check className="w-3 h-3" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
+                    <>
+                      <button
+                        onClick={() => handleCopy(message.id, message.text)}
+                        aria-label="回答をコピー"
+                        className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors duration-150"
+                      >
+                        {copiedId === message.id ? (
+                          <Check className="w-3 h-3" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </button>
+                      {message.messageId && (
+                        <>
+                          <button
+                            onClick={() => handleFeedback(message.id, message.messageId, 'like')}
+                            aria-label="役に立った"
+                            className={`transition-colors duration-150 ${
+                              message.rating === 'like'
+                                ? 'text-emerald-500'
+                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleFeedback(message.id, message.messageId, 'dislike')}
+                            aria-label="役に立たなかった"
+                            className={`transition-colors duration-150 ${
+                              message.rating === 'dislike'
+                                ? 'text-red-500'
+                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            <ThumbsDown className="w-3 h-3" />
+                          </button>
+                        </>
                       )}
-                    </button>
+                    </>
                   )}
                 </div>
               </div>
